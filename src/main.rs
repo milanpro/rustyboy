@@ -1,3 +1,5 @@
+mod gb_cpu;
+
 fn main() {
-    println!("Hello, world!");
+    gb_cpu::Z80CPU::new();
 }
