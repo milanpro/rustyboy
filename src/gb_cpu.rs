@@ -1,47 +1,111 @@
 struct Registers {
-  // 8-bit-registers
-  a: u8,
-  b: u8,
-  c: u8,
-  d: u8,
-  e: u8,
-  h: u8,
-  l: u8,
-  f: u8,
+    a: u8,
+    f: u8,
+    b: u8,
+    c: u8,
+    d: u8,
+    e: u8,
+    h: u8,
+    l: u8,
+    pc: u16,
+    sp: u16,
+}
 
-  // 16-bit-registers
-  pc: u16,
-  sp: u16,
+impl Registers {
+  pub fn new() -> Registers {
+    Registers {
+        a: 0x00,
+        f: 0x00,
+        b: 0x00,
+        c: 0x00,
+        d: 0x00,
+        e: 0x00,
+        h: 0x00,
+        l: 0x00,
+        pc: 0x0000,
+        sp: 0x0000,
+    }
+}
 
-  // Clock for last instruction
-  m: u16,
-  t: u16
-} 
-
-struct TimeClock {
-  m: u16,
-  t: u16
 }
 
 pub struct Z80CPU {
-  registers: Registers,
-  time_clock: TimeClock,
-  halt: u8,
-  stop: u8  
+  r: Registers,
+  halted: bool,
+  ime: bool
 }
 
 impl Z80CPU {
 
   pub fn new() -> Z80CPU {
-    let registers = Registers {a:0, b:0, c:0, d:0, e:0, h:0, l: 0, f:0, m:0, pc:0, sp:0, t:0 };
-    let time_clock = TimeClock {m:0, t:0};
-    return Z80CPU {registers, time_clock, halt: 0, stop: 0};
+    let r = Registers::new();
+    return Z80CPU {r, halted: false, ime: false};
   }
 
-  fn reset(mut self) {
-    self.registers = Registers {a:0, b:0, c:0, d:0, e:0, h:0, l: 0, f:0, m:0, pc:0, sp:0, t:0 };
-    self.time_clock = TimeClock {m:0, t:0};
-    self.halt = 0;
-    self.stop = 0;
+  fn reset(&mut self) {
+    self.r = Registers::new();
+    self.halted = false;
+    self.ime = false;
+  }
+
+  fn fetchopcode(&mut self) -> u8 {
+    let b = 0x00;// TODO: fetch with pc from memory
+    self.r.pc += 1;
+    b
+  }
+
+  fn interpret(&mut self) -> u8 {
+    let op = self.fetchopcode();
+    match op {
+      0x40 => { 1 },
+      0x41 => { self.r.b = self.r.c; 1 },
+      0x42 => { self.r.b = self.r.d; 1 },
+      0x43 => { self.r.b = self.r.e; 1 },
+      0x44 => { self.r.b = self.r.h; 1 },
+      0x45 => { self.r.b = self.r.l; 1 },
+      0x47 => { self.r.b = self.r.a; 1 },
+      0x48 => { self.r.c = self.r.b; 1 },
+      0x49 => { 1 },
+      0x4A => { self.r.c = self.r.d; 1 },
+      0x4B => { self.r.c = self.r.e; 1 },
+      0x4C => { self.r.c = self.r.h; 1 },
+      0x4D => { self.r.c = self.r.l; 1 },
+      0x4F => { self.r.c = self.r.a; 1 },
+      0x50 => { self.r.d = self.r.b; 1 },
+      0x51 => { self.r.d = self.r.c; 1 },
+      0x52 => { 1 },
+      0x53 => { self.r.d = self.r.e; 1 },
+      0x54 => { self.r.d = self.r.h; 1 },
+      0x55 => { self.r.d = self.r.l; 1 },
+      0x57 => { self.r.d = self.r.a; 1 },
+      0x58 => { self.r.e = self.r.b; 1 },
+      0x59 => { self.r.e = self.r.c; 1 },
+      0x5A => { self.r.e = self.r.d; 1 },
+      0x5B => { 1 },
+      0x5C => { self.r.e = self.r.h; 1 },
+      0x5D => { self.r.e = self.r.l; 1 },
+      0x5F => { self.r.e = self.r.a; 1 },
+      0x60 => { self.r.h = self.r.b; 1 },
+      0x61 => { self.r.h = self.r.c; 1 },
+      0x62 => { self.r.h = self.r.d; 1 },
+      0x63 => { self.r.h = self.r.e; 1 },
+      0x64 => { 1 },
+      0x65 => { self.r.h = self.r.l; 1 },
+      0x67 => { self.r.h = self.r.a; 1 },
+      0x68 => { self.r.l = self.r.b; 1 },
+      0x69 => { self.r.l = self.r.c; 1 },
+      0x6A => { self.r.l = self.r.d; 1 },
+      0x6B => { self.r.l = self.r.e; 1 },
+      0x6C => { self.r.l = self.r.h; 1 },
+      0x6D => { 1 },
+      0x6F => { self.r.l = self.r.a; 1 },
+      0x78 => { self.r.a = self.r.b; 1 },
+      0x79 => { self.r.a = self.r.c; 1 },
+      0x7A => { self.r.a = self.r.d; 1 },
+      0x7B => { self.r.a = self.r.e; 1 },
+      0x7C => { self.r.a = self.r.h; 1 },
+      0x7D => { self.r.a = self.r.l; 1 },
+      notimpl => panic!("Instruction {:2X} is not implemented", notimpl),
+    }
   }
 }
