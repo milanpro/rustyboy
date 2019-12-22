@@ -1,5 +1,5 @@
-mod gb_cpu;
+mod gb_emulator;
 
 fn main() {
-    gb_cpu::Z80CPU::new();
+    gb_emulator::startEmulation();
 }

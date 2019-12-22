@@ -1,33 +1,4 @@
-struct Registers {
-    a: u8,
-    f: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    pc: u16,
-    sp: u16,
-}
-
-impl Registers {
-  pub fn new() -> Registers {
-    Registers {
-        a: 0x00,
-        f: 0x00,
-        b: 0x00,
-        c: 0x00,
-        d: 0x00,
-        e: 0x00,
-        h: 0x00,
-        l: 0x00,
-        pc: 0x0000,
-        sp: 0x0000,
-    }
-}
-
-}
+use super::registers::Registers;
 
 pub struct Z80CPU {
   r: Registers,
@@ -48,15 +19,23 @@ impl Z80CPU {
     self.ime = false;
   }
 
-  fn fetchopcode(&mut self) -> u8 {
+  fn fetchByte(&mut self) -> u8 {
     let b = 0x00;// TODO: fetch with pc from memory
     self.r.pc += 1;
     b
   }
 
+  fn fetchWord(&mut self) -> u16 {
+    let b = 0x0000;// TODO: fetch with pc from memory
+    self.r.pc += 2;
+    b
+  }
+
   fn interpret(&mut self) -> u8 {
-    let op = self.fetchopcode();
+    let op = self.fetchByte();
     match op {
+      0x00 => { 1 },
+
       0x40 => { 1 },
       0x41 => { self.r.b = self.r.c; 1 },
       0x42 => { self.r.b = self.r.d; 1 },
@@ -99,6 +78,7 @@ impl Z80CPU {
       0x6C => { self.r.l = self.r.h; 1 },
       0x6D => { 1 },
       0x6F => { self.r.l = self.r.a; 1 },
+      0x76 => { self.halted = true; 1 },
       0x78 => { self.r.a = self.r.b; 1 },
       0x79 => { self.r.a = self.r.c; 1 },
       0x7A => { self.r.a = self.r.d; 1 },
