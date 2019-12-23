@@ -11,6 +11,20 @@ pub struct MemoryBus {
 }
 
 impl MemoryBus {
+    pub fn new() -> MemoryBus {
+        MemoryBus {
+            initial_rom: [0; 0x3FFF],
+            swap_rom: [0; 0x3FFF],
+            tile_ram: [0; 0x17FF],
+            swap_ram: [0; 0x1FFF],
+            working_ram: [0; 0x1FFF],
+            object_attribute_memory: [0; 0x9F],
+            io_registers: [0; 0x7F],
+            high_ram: [0; 0x7E],
+            interrupt_enable_register: 0
+        }
+    }
+
     pub fn read_byte(&self, addr: u16) -> u8 {
         match addr {
             0x0000 ..= 0x3FFF => self.initial_rom[addr as usize],

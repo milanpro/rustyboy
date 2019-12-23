@@ -1,7 +1,9 @@
 use super::registers::Registers;
+use super::memory::MemoryBus;
 
 pub struct Z80CPU {
   r: Registers,
+  m: MemoryBus,
   halted: bool,
   ime: bool
 }
@@ -10,7 +12,8 @@ impl Z80CPU {
 
   pub fn new() -> Z80CPU {
     let r = Registers::new();
-    return Z80CPU {r, halted: false, ime: false};
+    let m = MemoryBus::new();
+    return Z80CPU {r, m, halted: false, ime: false};
   }
 
   fn reset(&mut self) {
@@ -20,7 +23,7 @@ impl Z80CPU {
   }
 
   fn fetchByte(&mut self) -> u8 {
-    let b = 0x00;// TODO: fetch with pc from memory
+    let b = self.m.read_byte(self.r.pc);
     self.r.pc += 1;
     b
   }
