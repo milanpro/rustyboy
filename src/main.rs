@@ -1,3 +1,5 @@
+mod gb_emulator;
+
 fn main() {
-    println!("Hello, world!");
+    gb_emulator::startEmulation();
 }
