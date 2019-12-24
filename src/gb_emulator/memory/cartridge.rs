@@ -36,9 +36,11 @@ impl Cartridge {
 
     pub fn read_byte(&self, addr: u16) -> u8 {
         match addr {
-            0x0000 ..= 0x3FFF => self.cartridge_buffer[addr as usize],
-            0x4000 ..= 0x7FFF => self.cartridge_buffer[((addr - 0x4000) as usize) + self.swap_rom_offset],
-            0xA000 ..= 0xBFFF => self.swap_ram[(addr - 0xA000) as usize],
+            0x0000..=0x3FFF => self.cartridge_buffer[addr as usize],
+            0x4000..=0x7FFF => {
+                self.cartridge_buffer[((addr - 0x4000) as usize) + self.swap_rom_offset]
+            }
+            0xA000..=0xBFFF => self.swap_ram[(addr - 0xA000) as usize],
             _ => panic!("access to cartridge in non mapped memory space: {:X}", addr),
         }
     }
@@ -46,11 +48,14 @@ impl Cartridge {
     pub fn write_byte(&mut self, addr: u16, val: u8) {
         match self.memory_bank_type {
             MBCType::MBC2 => match addr {
-                0x0000 ..= 0x1FFF => self.ram_active = (addr & 0x100) == 0,
-                0x2000 ..= 0x3FFF if (addr & 0x100) != 0 => self.select_rom_bank((val & 0xF) as u16),
+                0x0000..=0x1FFF => self.ram_active = (addr & 0x100) == 0,
+                0x2000..=0x3FFF if (addr & 0x100) != 0 => self.select_rom_bank((val & 0xF) as u16),
                 _ => panic!("write to cartridge at read only address: {:X}", addr),
             },
-            _ => panic!("write to cartridge with unknown MBC: {:?}", self.memory_bank_type),
+            _ => panic!(
+                "write to cartridge with unknown MBC: {:?}",
+                self.memory_bank_type
+            ),
         }
     }
 
@@ -59,7 +64,8 @@ impl Cartridge {
 
         assert!(
             self.cartridge_buffer.len() >= self.swap_rom_offset + 0x4000,
-            "Tried to swap in a bank not available on rom: {:X}", self.swap_rom_offset
+            "Tried to swap in a bank not available on rom: {:X}",
+            self.swap_rom_offset
         );
     }
 }
