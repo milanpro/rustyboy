@@ -12,12 +12,12 @@ impl Z80CPU {
   pub fn new() -> Z80CPU {
     let r = Registers::new();
     let m = MemoryBus::new();
-    return Z80CPU {
+    Z80CPU {
       r,
       m,
       halted: false,
       ime: false,
-    };
+    }
   }
 
   fn reset(&mut self) {
@@ -39,8 +39,7 @@ impl Z80CPU {
   }
 
   fn interpret(&mut self) -> u8 {
-    let op = self.fetch_byte();
-    match op {
+    match self.fetch_byte() {
       0x00 => 1,
 
       0x40 => 1,
