@@ -27,11 +27,11 @@ impl Registers {
     }
   }
 
-  pub fn getHL(&self) -> u16 {
+  pub fn get_hl(&self) -> u16 {
     (self.h as u16) << 8 + self.l
   }
 
-  pub fn setHL(&mut self, word: u16) {
+  pub fn set_hl(&mut self, word: u16) {
     self.h = (word >> 8) as u8;
     self.l = word as u8;
   }

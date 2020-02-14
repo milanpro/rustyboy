@@ -26,20 +26,20 @@ impl Z80CPU {
     self.ime = false;
   }
 
-  fn fetchByte(&mut self) -> u8 {
+  fn fetch_byte(&mut self) -> u8 {
     let b = self.m.read_byte(self.r.pc);
     self.r.pc += 1;
     b
   }
 
-  fn fetchWord(&mut self) -> u16 {
+  fn fetch_word(&mut self) -> u16 {
     let b = 0x0000; // TODO: fetch with pc from memory
     self.r.pc += 2;
     b
   }
 
   fn interpret(&mut self) -> u8 {
-    let op = self.fetchByte();
+    let op = self.fetch_byte();
     match op {
       0x00 => 1,
 
