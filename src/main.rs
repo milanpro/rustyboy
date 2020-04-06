@@ -13,6 +13,14 @@ fn main() {
     let mut pixels = Pixels::new(width, height, surface_texture).unwrap();
 
     loop {
+        let frame = pixels.get_frame();
+        for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
+            pixel[0] = (i % 0xff) as u8; // R
+            pixel[1] = 0xff; // G
+            pixel[2] = 0xff; // B
+            pixel[3] = 0xff; // A
+        }
+
         pixels.render();
     }
 
