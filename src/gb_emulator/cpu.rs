@@ -20,6 +20,14 @@ impl Z80CPU {
     }
   }
 
+  fn cycle (&mut self) -> u32 {
+    if self.halted {
+      1
+    } else {
+      self.interpret()
+    }
+  }
+
   fn reset(&mut self) {
     self.r = Registers::new();
     self.halted = false;
@@ -33,15 +41,26 @@ impl Z80CPU {
   }
 
   fn fetch_word(&mut self) -> u16 {
-    let b = 0x0000; // TODO: fetch with pc from memory
-    self.r.pc += 2;
-    b
+    let b = self.m.read_byte(self.r.pc);
+    self.r.pc += 1;
+    let w = (b as u16) << 8 + self.m.read_byte(self.r.pc);
+    self.r.pc += 1;
+    w
   }
 
-  fn interpret(&mut self) -> u8 {
+  fn interpret(&mut self) -> u32 {
     match self.fetch_byte() {
       0x00 => 1,
-
+      0x01 => {
+        let d = self.fetch_word();
+        self.r.set_bc(d); 3
+      }
+      0x02 => {
+        self.m.write_byte(self.r.get_bc(), self.r.a); 2
+      }
+      0x03 => {
+        self.r.set_bc(self.r.get_bc().wrapping_add(1)); 2
+      }
       0x40 => 1,
       0x41 => {
         self.r.b = self.r.c;
@@ -223,4 +242,5 @@ impl Z80CPU {
       notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
     }
   }
+
 }

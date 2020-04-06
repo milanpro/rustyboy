@@ -1,5 +1,6 @@
 pub struct Registers {
   pub a: u8,
+  // Flag register
   pub f: u8,
   pub b: u8,
   pub c: u8,
@@ -9,6 +10,19 @@ pub struct Registers {
   pub l: u8,
   pub pc: u16,
   pub sp: u16,
+}
+
+#[derive(Copy, Clone)]
+pub enum Flag
+{
+    // Carry flag
+    C = 0b00010000,
+    // Half-carry flag
+    H = 0b00100000,
+    // Subtraction flag
+    N = 0b01000000,
+    // Zero flag
+    Z = 0b10000000,
 }
 
 impl Registers {
@@ -28,11 +42,51 @@ impl Registers {
   }
 
   pub fn get_hl(&self) -> u16 {
-    (self.h as u16) << 8 + self.l
+    (self.h as u16) << 8 | self.l as u16
+  }
+
+  pub fn get_bc(&self) -> u16 {
+    (self.b as u16) << 8 | self.c as u16
+  }
+
+  pub fn get_af(&self) -> u16 {
+    (self.a as u16) << 8 | self.f as u16
+  }
+
+  pub fn get_de(&self) -> u16 {
+    (self.d as u16) << 8 | self.e as u16
   }
 
   pub fn set_hl(&mut self, word: u16) {
     self.h = (word >> 8) as u8;
     self.l = word as u8;
+  }
+
+  pub fn set_bc(&mut self, word: u16) {
+    self.b = (word >> 8) as u8;
+    self.c = word as u8;
+  }
+
+  pub fn set_af(&mut self, word: u16) {
+    self.a = (word >> 8) as u8;
+    self.f = word as u8;
+  }
+
+  pub fn set_de(&mut self, word: u16) {
+    self.d = (word >> 8) as u8;
+    self.e = word as u8;
+  }
+
+  pub fn set_flag(&mut self, flag: Flag, value: bool) {
+    let mask = flag as u8; match value {
+      true => self.f |= mask,
+      false => self.f &= !mask,
+    }
+    self.f &= 0xF0
+  }
+
+  pub fn get_flag(&self, flag: Flag) -> bool {
+    let mask = flag as u8;
+    self.f & mask != 0
   }
 }
