@@ -103,6 +103,6 @@ impl Cartridge {
     }
 
     fn select_ram_bank(&mut self, bank_id: u16) {
-        panic!("rom bank selection not implemented");
+        unimplemented!("rom bank selection not implemented")
     }
 }

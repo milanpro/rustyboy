@@ -220,7 +220,7 @@ impl Z80CPU {
         self.r.a = self.r.l;
         1
       }
-      notimpl => panic!("Instruction {:2X} is not implemented", notimpl),
+      notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
     }
   }
 }
