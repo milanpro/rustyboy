@@ -22,9 +22,9 @@ fn main() {
         loop {
             let frame = pixels.get_frame();
             for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
-                pixel[0] = (i % 0xff) as u8;
-                pixel[1] = (i / 2 % 0xff) as u8;
-                pixel[2] = (i % 0xff) as u8;
+                pixel[0] = (i as u32 % width) as u8;
+                pixel[1] = (i as u32 % height) as u8;
+                pixel[2] = (0xff) as u8;
                 pixel[3] = 0xff;
             }
 
