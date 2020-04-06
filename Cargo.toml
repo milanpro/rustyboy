@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 pixels = "0.0.2"
 winit = "0.22.0"
+interpolation = "0.2.0"

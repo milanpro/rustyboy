@@ -1,15 +1,19 @@
 mod gb_emulator;
+use interpolation::Lerp;
 use pixels::{wgpu::Surface, Pixels, SurfaceTexture};
 use std::thread;
 use winit::{
+    dpi::PhysicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-
 fn main() {
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+        .with_inner_size(PhysicalSize::new(800, 600))
+        .build(&event_loop)
+        .unwrap();
 
     thread::spawn(move || loop {
         let surface = Surface::create(&window);
@@ -22,9 +26,10 @@ fn main() {
         loop {
             let frame = pixels.get_frame();
             for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
-                pixel[0] = (i as u32 % width) as u8;
-                pixel[1] = (i as u32 % height) as u8;
-                pixel[2] = (0xff) as u8;
+                pixel[0] =
+                    (0 as u8).lerp(&(0xff as u8), &(width as f32 / ((i as u32 % width) as f32)));
+                pixel[1] = 0;
+                pixel[2] = 0;
                 pixel[3] = 0xff;
             }
 
