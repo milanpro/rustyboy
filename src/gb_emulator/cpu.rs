@@ -293,6 +293,102 @@ impl Z80CPU {
                 self.r.a = self.r.l;
                 1
             }
+            0x80 => {
+                self.r.a = self.r.a.wrapping_add(self.r.b);
+                1
+            }
+            0x81 => {
+                self.r.a = self.r.a.wrapping_add(self.r.c);
+                1
+            }
+            0x82 => {
+                self.r.a = self.r.a.wrapping_add(self.r.d);
+                1
+            }
+            0x83 => {
+                self.r.a = self.r.a.wrapping_add(self.r.e);
+                1
+            }
+            0x84 => {
+                self.r.a = self.r.a.wrapping_add(self.r.h);
+                1
+            }
+            0x85 => {
+                self.r.a = self.r.a.wrapping_add(self.r.l);
+                1
+            }
+            0x90 => {
+                self.r.a = self.r.a.wrapping_rem(self.r.b);
+                1
+            }
+            0x91 => {
+                self.r.a = self.r.a.wrapping_rem(self.r.c);
+                1
+            }
+            0x92 => {
+                self.r.a = self.r.a.wrapping_rem(self.r.d);
+                1
+            }
+            0x93 => {
+                self.r.a = self.r.a.wrapping_rem(self.r.e);
+                1
+            }
+            0x94 => {
+                self.r.a = self.r.a.wrapping_rem(self.r.h);
+                1
+            }
+            0x95 => {
+                self.r.a = self.r.a.wrapping_rem(self.r.l);
+                1
+            }
+            0xA0 => {
+                self.r.a &= self.r.b;
+                1
+            }
+            0xA1 => {
+                self.r.a &= self.r.c;
+                1
+            }
+            0xA2 => {
+                self.r.a &= self.r.d;
+                1
+            }
+            0xA3 => {
+                self.r.a &= self.r.e;
+                1
+            }
+            0xA4 => {
+                self.r.a &= self.r.h;
+                1
+            }
+            0xA5 => {
+                self.r.a &= self.r.l;
+                1
+            }
+            0xB0 => {
+                self.r.a |= self.r.b;
+                1
+            }
+            0xB1 => {
+                self.r.a |= self.r.c;
+                1
+            }
+            0xB2 => {
+                self.r.a |= self.r.d;
+                1
+            }
+            0xB3 => {
+                self.r.a |= self.r.e;
+                1
+            }
+            0xB4 => {
+                self.r.a |= self.r.h;
+                1
+            }
+            0xB5 => {
+                self.r.a |= self.r.l;
+                1
+            }
             notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
         }
     }
