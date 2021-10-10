@@ -1,6 +1,8 @@
 mod cartridge;
 use cartridge::Cartridge;
 
+use super::utils::U16Ext;
+
 pub struct MemoryBus {
     cartridge: Cartridge,
     tile_ram: [u8; 0x17FF],
@@ -55,5 +57,10 @@ impl MemoryBus {
             0xFF80..=0xFFFE => self.high_ram[(addr - 0xFF80) as usize] = val,
             0xFFFF => self.interrupt_enable_register = val,
         }
+    }
+
+    pub fn write_word(&mut self, addr: u16, val: u16) {
+        self.write_byte(addr, val.hi());
+        self.write_byte(addr + 1, val.hi());
     }
 }
