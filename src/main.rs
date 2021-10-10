@@ -3,7 +3,6 @@ use log::error;
 use interpolation::Lerp;
 use pixels::{Pixels, SurfaceTexture};
 use core::panic;
-use std::thread;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, VirtualKeyCode},
@@ -69,5 +68,5 @@ fn main() {
         }
     });
 
-    //gb_emulator::start_emulation();
+    gb_emulator::start_emulation();
 }
