@@ -1,5 +1,8 @@
+use crate::gb_emulator::registers::Flag;
+
 use super::memory::MemoryBus;
 use super::registers::Registers;
+use super::utils::U16Ext;
 
 pub struct Z80CPU {
     r: Registers,
@@ -46,6 +49,34 @@ impl Z80CPU {
         let w = (b as u16) << 8 + self.m.read_byte(self.r.pc);
         self.r.pc += 1;
         w
+    }
+
+    fn add(&mut self, val: u8) {
+        let res = (self.r.a as u16) + (val as u16);
+
+        self.r.set_flag(Flag::Z, res.lo() == 0);
+        self.r
+            .set_flag(Flag::H, ((self.r.a & 0x0F) + (val & 0x0F)) & 0x10 == 0x10);
+        self.r.set_flag(Flag::C, res > 0xFF);
+        self.r.set_flag(Flag::N, false);
+
+        self.r.a = res.lo();
+    }
+
+    fn adc(&mut self, val: u8) {
+        let mut res = (self.r.a as u16) + (val as u16);
+
+        if self.r.get_flag(Flag::C) {
+            res += 1;
+        }
+
+        self.r.set_flag(Flag::Z, res.lo() == 0);
+        self.r
+            .set_flag(Flag::H, ((self.r.a & 0x0F) + (val & 0x0F)) & 0x10 == 0x10);
+        self.r.set_flag(Flag::C, res > 0xFF);
+        self.r.set_flag(Flag::N, false);
+
+        self.r.a = res.lo();
     }
 
     // fetch and run the next instruction, returns the length of the ran instruction
@@ -294,27 +325,69 @@ impl Z80CPU {
                 1
             }
             0x80 => {
-                self.r.a = self.r.a.wrapping_add(self.r.b);
+                self.add(self.r.b);
                 1
             }
             0x81 => {
-                self.r.a = self.r.a.wrapping_add(self.r.c);
+                self.add(self.r.c);
                 1
             }
             0x82 => {
-                self.r.a = self.r.a.wrapping_add(self.r.d);
+                self.add(self.r.d);
                 1
             }
             0x83 => {
-                self.r.a = self.r.a.wrapping_add(self.r.e);
+                self.add(self.r.e);
                 1
             }
             0x84 => {
-                self.r.a = self.r.a.wrapping_add(self.r.h);
+                self.add(self.r.h);
                 1
             }
             0x85 => {
-                self.r.a = self.r.a.wrapping_add(self.r.l);
+                self.add(self.r.l);
+                1
+            }
+            0x86 => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.add(val);
+                1
+            }
+            0x87 => {
+                self.add(self.r.a);
+                1
+            }
+            0x88 => {
+                self.adc(self.r.b);
+                1
+            }
+            0x89 => {
+                self.adc(self.r.c);
+                1
+            }
+            0x8A => {
+                self.adc(self.r.d);
+                1
+            }
+            0x8B => {
+                self.adc(self.r.e);
+                1
+            }
+            0x8C => {
+                self.adc(self.r.h);
+                1
+            }
+            0x8D => {
+                self.adc(self.r.l);
+                1
+            }
+            0x8E => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.adc(val);
+                1
+            }
+            0x8F => {
+                self.adc(self.r.a);
                 1
             }
             0x90 => {
@@ -341,6 +414,11 @@ impl Z80CPU {
                 self.r.a = self.r.a.wrapping_rem(self.r.l);
                 1
             }
+            0x96 => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.r.a = self.r.a.wrapping_rem(val);
+                1
+            }
             0xA0 => {
                 self.r.a &= self.r.b;
                 1
@@ -365,6 +443,11 @@ impl Z80CPU {
                 self.r.a &= self.r.l;
                 1
             }
+            0xA6 => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.r.a &= val;
+                1
+            }
             0xB0 => {
                 self.r.a |= self.r.b;
                 1
@@ -387,6 +470,11 @@ impl Z80CPU {
             }
             0xB5 => {
                 self.r.a |= self.r.l;
+                1
+            }
+            0xB6 => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.r.a |= val;
                 1
             }
             notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
