@@ -79,6 +79,28 @@ impl Z80CPU {
         self.r.a = res.lo();
     }
 
+    fn and(&mut self, val: u8) {
+        let res = self.r.a & val;
+
+        self.r.set_flag(Flag::Z, self.r.a == 0);
+        self.r.set_flag(Flag::H, true);
+        self.r.set_flag(Flag::N, false);
+        self.r.set_flag(Flag::C, false);
+
+        self.r.a = res;
+    }
+
+    fn or(&mut self, val: u8) {
+        let res = self.r.a | val;
+
+        self.r.set_flag(Flag::Z, self.r.a == 0);
+        self.r.set_flag(Flag::H, false);
+        self.r.set_flag(Flag::N, false);
+        self.r.set_flag(Flag::C, false);
+
+        self.r.a = res;
+    }
+
     // fetch and run the next instruction, returns the length of the ran instruction
     fn interpret(&mut self) -> u32 {
         match self.fetch_byte() {
@@ -420,61 +442,69 @@ impl Z80CPU {
                 1
             }
             0xA0 => {
-                self.r.a &= self.r.b;
+                self.and(self.r.b);
                 1
             }
             0xA1 => {
-                self.r.a &= self.r.c;
+                self.and(self.r.c);
                 1
             }
             0xA2 => {
-                self.r.a &= self.r.d;
+                self.and(self.r.d);
                 1
             }
             0xA3 => {
-                self.r.a &= self.r.e;
+                self.and(self.r.e);
                 1
             }
             0xA4 => {
-                self.r.a &= self.r.h;
+                self.and(self.r.h);
                 1
             }
             0xA5 => {
-                self.r.a &= self.r.l;
+                self.and(self.r.l);
                 1
             }
             0xA6 => {
                 let val = self.m.read_byte(self.r.get_hl());
-                self.r.a &= val;
+                self.and(val);
+                1
+            }
+            0xA7 => {
+                self.and(self.r.a);
                 1
             }
             0xB0 => {
-                self.r.a |= self.r.b;
+                self.or(self.r.b);
                 1
             }
             0xB1 => {
-                self.r.a |= self.r.c;
+                self.or(self.r.c);
                 1
             }
             0xB2 => {
-                self.r.a |= self.r.d;
+                self.or(self.r.d);
                 1
             }
             0xB3 => {
-                self.r.a |= self.r.e;
+                self.or(self.r.e);
                 1
             }
             0xB4 => {
-                self.r.a |= self.r.h;
+                self.or(self.r.h);
                 1
             }
             0xB5 => {
-                self.r.a |= self.r.l;
+                self.or(self.r.l);
                 1
             }
             0xB6 => {
                 let val = self.m.read_byte(self.r.get_hl());
-                self.r.a |= val;
+                self.or(val);
+                1
+            }
+            0xB7 => {
+                self.or(self.r.a);
                 1
             }
             notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
