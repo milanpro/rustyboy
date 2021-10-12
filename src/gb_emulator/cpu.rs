@@ -85,21 +85,34 @@ impl Z80CPU {
     }
 
     fn sbc(&mut self, val: u8) {
+        let res = self.r.a - val - 1;
+
         self.r
             .set_flag(Flag::H, ((self.r.a & 0xF) as i8 - (val & 0xF) as i8) < 0);
         self.r
             .set_flag(Flag::C, ((self.r.a as i16) - (val as i16) - 1) < 0);
         self.r.set_flag(Flag::N, true);
-        self.r.a -= val;
-        self.r.a -= 1;
-        self.r.set_flag(Flag::Z, self.r.a == 0);
+        self.r.set_flag(Flag::Z, res == 0);
+
+        self.r.a = res;
     }
 
     fn and(&mut self, val: u8) {
         let res = self.r.a & val;
 
-        self.r.set_flag(Flag::Z, self.r.a == 0);
+        self.r.set_flag(Flag::Z, res == 0);
         self.r.set_flag(Flag::H, true);
+        self.r.set_flag(Flag::N, false);
+        self.r.set_flag(Flag::C, false);
+
+        self.r.a = res;
+    }
+
+    fn xor(&mut self, val: u8) {
+        let res = self.r.a ^ val;
+
+        self.r.set_flag(Flag::Z, res == 0);
+        self.r.set_flag(Flag::H, false);
         self.r.set_flag(Flag::N, false);
         self.r.set_flag(Flag::C, false);
 
@@ -109,7 +122,7 @@ impl Z80CPU {
     fn or(&mut self, val: u8) {
         let res = self.r.a | val;
 
-        self.r.set_flag(Flag::Z, self.r.a == 0);
+        self.r.set_flag(Flag::Z, res == 0);
         self.r.set_flag(Flag::H, false);
         self.r.set_flag(Flag::N, false);
         self.r.set_flag(Flag::C, false);
@@ -532,6 +545,39 @@ impl Z80CPU {
             }
             0xA7 => {
                 self.and(self.r.a);
+                1
+            }
+            0xA8 => {
+                self.xor(self.r.b);
+                1
+            }
+            0xA9 => {
+                self.xor(self.r.c);
+                1
+            }
+            0xAA => {
+                self.xor(self.r.d);
+                1
+            }
+            0xAB => {
+                self.xor(self.r.e);
+                1
+            }
+            0xAC => {
+                self.xor(self.r.h);
+                1
+            }
+            0xAD => {
+                self.xor(self.r.l);
+                1
+            }
+            0xAE => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.xor(val);
+                1
+            }
+            0xAF => {
+                self.xor(self.r.a);
                 1
             }
             0xB0 => {
