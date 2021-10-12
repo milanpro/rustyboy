@@ -79,6 +79,22 @@ impl Z80CPU {
         self.r.a = res.lo();
     }
 
+    fn sub(&mut self, val: u8) {
+        self.cp(val);
+        self.r.a -= val;
+    }
+
+    fn sbc(&mut self, val: u8) {
+        self.r
+            .set_flag(Flag::H, ((self.r.a & 0xF) as i8 - (val & 0xF) as i8) < 0);
+        self.r
+            .set_flag(Flag::C, ((self.r.a as i16) - (val as i16) - 1) < 0);
+        self.r.set_flag(Flag::N, true);
+        self.r.a -= val;
+        self.r.a -= 1;
+        self.r.set_flag(Flag::Z, self.r.a == 0);
+    }
+
     fn and(&mut self, val: u8) {
         let res = self.r.a & val;
 
@@ -99,6 +115,13 @@ impl Z80CPU {
         self.r.set_flag(Flag::C, false);
 
         self.r.a = res;
+    }
+
+    fn cp(&mut self, val: u8) {
+        self.r.set_flag(Flag::Z, self.r.a == val);
+        self.r.set_flag(Flag::H, (self.r.a & 0xF) < (val & 0xF));
+        self.r.set_flag(Flag::N, true);
+        self.r.set_flag(Flag::C, self.r.a < val);
     }
 
     // fetch and run the next instruction, returns the length of the ran instruction
@@ -413,32 +436,69 @@ impl Z80CPU {
                 1
             }
             0x90 => {
-                self.r.a = self.r.a.wrapping_rem(self.r.b);
+                self.sub(self.r.b);
                 1
             }
             0x91 => {
-                self.r.a = self.r.a.wrapping_rem(self.r.c);
+                self.sub(self.r.c);
                 1
             }
             0x92 => {
-                self.r.a = self.r.a.wrapping_rem(self.r.d);
+                self.sub(self.r.d);
                 1
             }
             0x93 => {
-                self.r.a = self.r.a.wrapping_rem(self.r.e);
+                self.sub(self.r.e);
                 1
             }
             0x94 => {
-                self.r.a = self.r.a.wrapping_rem(self.r.h);
+                self.sub(self.r.h);
                 1
             }
             0x95 => {
-                self.r.a = self.r.a.wrapping_rem(self.r.l);
+                self.sub(self.r.l);
                 1
             }
             0x96 => {
                 let val = self.m.read_byte(self.r.get_hl());
-                self.r.a = self.r.a.wrapping_rem(val);
+                self.sub(val);
+                1
+            }
+            0x97 => {
+                self.sub(self.r.a);
+                1
+            }
+            0x98 => {
+                self.sbc(self.r.b);
+                1
+            }
+            0x99 => {
+                self.sbc(self.r.c);
+                1
+            }
+            0x9A => {
+                self.sbc(self.r.d);
+                1
+            }
+            0x9B => {
+                self.sbc(self.r.e);
+                1
+            }
+            0x9C => {
+                self.sbc(self.r.h);
+                1
+            }
+            0x9D => {
+                self.sbc(self.r.l);
+                1
+            }
+            0x9E => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.sbc(val);
+                1
+            }
+            0x9F => {
+                self.sbc(self.r.a);
                 1
             }
             0xA0 => {
@@ -505,6 +565,39 @@ impl Z80CPU {
             }
             0xB7 => {
                 self.or(self.r.a);
+                1
+            }
+            0xB8 => {
+                self.cp(self.r.b);
+                1
+            }
+            0xB9 => {
+                self.cp(self.r.c);
+                1
+            }
+            0xBA => {
+                self.cp(self.r.d);
+                1
+            }
+            0xBB => {
+                self.cp(self.r.e);
+                1
+            }
+            0xBC => {
+                self.cp(self.r.h);
+                1
+            }
+            0xBD => {
+                self.cp(self.r.l);
+                1
+            }
+            0xBE => {
+                let val = self.m.read_byte(self.r.get_hl());
+                self.cp(val);
+                1
+            }
+            0xBF => {
+                self.cp(self.r.a);
                 1
             }
             notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
