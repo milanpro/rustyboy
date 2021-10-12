@@ -5,12 +5,18 @@ use crate::gb_emulator::utils::U16Ext;
 pub trait Opcodes {
     fn add(&mut self, val: u8);
     fn adc(&mut self, val: u8);
+
     fn sub(&mut self, val: u8);
     fn sbc(&mut self, val: u8);
+
     fn and(&mut self, val: u8);
     fn xor(&mut self, val: u8);
     fn or(&mut self, val: u8);
+
     fn cp(&mut self, val: u8);
+
+    fn inc(&mut self, val: u8) -> u8;
+    fn dec(&mut self, val: u8) -> u8;
 }
 
 impl Opcodes for Z80CPU {
@@ -98,5 +104,25 @@ impl Opcodes for Z80CPU {
         self.r.set_flag(Flag::H, (self.r.a & 0xF) < (val & 0xF));
         self.r.set_flag(Flag::N, true);
         self.r.set_flag(Flag::C, self.r.a < val);
+    }
+
+    fn inc(&mut self, val: u8) -> u8 {
+        let res = val.wrapping_add(1);
+
+        self.r.set_flag(Flag::Z, res == 0);
+        self.r.set_flag(Flag::H, (val & 0xF) == 0xF);
+        self.r.set_flag(Flag::N, false);
+
+        res
+    }
+
+    fn dec(&mut self, val: u8) -> u8 {
+        let res = val.wrapping_rem(1);
+
+        self.r.set_flag(Flag::Z, res == 0);
+        self.r.set_flag(Flag::H, (res & 0xF) == 0xF);
+        self.r.set_flag(Flag::N, true);
+
+        res
     }
 }

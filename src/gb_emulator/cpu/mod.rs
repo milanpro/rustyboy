@@ -67,14 +67,14 @@ impl Z80CPU {
             }
             0x03 => {
                 self.r.set_bc(self.r.get_bc().wrapping_add(1));
-                2
+                1
             }
             0x04 => {
-                self.r.b = self.r.b.wrapping_add(1);
+                self.r.b = self.inc(self.r.b);
                 1
             }
             0x05 => {
-                self.r.b = self.r.b.wrapping_rem(1);
+                self.r.b = self.dec(self.r.b);
                 1
             }
             0x06 => {
@@ -104,11 +104,11 @@ impl Z80CPU {
                 1
             }
             0x0C => {
-                self.r.c = self.r.c.wrapping_add(1);
+                self.r.c = self.inc(self.r.c);
                 1
             }
             0x0D => {
-                self.r.c = self.r.c.wrapping_rem(1);
+                self.r.c = self.dec(self.r.c);
                 1
             }
             0x0E => {
@@ -117,6 +117,82 @@ impl Z80CPU {
             }
             0x0F => {
                 self.r.a = self.r.a.rotate_right(1);
+                1
+            }
+            0x13 => {
+                self.r.set_de(self.r.get_de().wrapping_add(1));
+                1
+            }
+            0x14 => {
+                self.r.d = self.inc(self.r.d);
+                1
+            }
+            0x15 => {
+                self.r.d = self.dec(self.r.d);
+                1
+            }
+            0x1B => {
+                self.r.set_de(self.r.get_de().wrapping_rem(1));
+                1
+            }
+            0x1C => {
+                self.r.e = self.inc(self.r.e);
+                1
+            }
+            0x1D => {
+                self.r.e = self.dec(self.r.e);
+                1
+            }
+            0x23 => {
+                self.r.set_hl(self.r.get_hl().wrapping_add(1));
+                1
+            }
+            0x24 => {
+                self.r.h = self.inc(self.r.h);
+                1
+            }
+            0x25 => {
+                self.r.h = self.dec(self.r.h);
+                1
+            }
+            0x2B => {
+                self.r.set_hl(self.r.get_hl().wrapping_rem(1));
+                1
+            }
+            0x2C => {
+                self.r.l = self.inc(self.r.l);
+                1
+            }
+            0x2D => {
+                self.r.l = self.dec(self.r.l);
+                1
+            }
+            0x33 => {
+                self.r.sp = self.r.sp.wrapping_add(1);
+                1
+            }
+            0x34 => {
+                let addr = self.r.get_hl();
+                let res = self.inc(self.m.read_byte(addr));
+                self.m.write_byte(addr, res);
+                1
+            }
+            0x35 => {
+                let addr = self.r.get_hl();
+                let res = self.dec(self.m.read_byte(addr));
+                self.m.write_byte(addr, res);
+                1
+            }
+            0x3B => {
+                self.r.sp = self.r.sp.wrapping_rem(1);
+                1
+            }
+            0x3C => {
+                self.r.a = self.inc(self.r.a);
+                1
+            }
+            0x3D => {
+                self.r.a = self.dec(self.r.a);
                 1
             }
             0x40 => 1,
