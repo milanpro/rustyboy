@@ -3,6 +3,7 @@ mod opcodes;
 use opcodes::Opcodes;
 
 use super::memory::MemoryBus;
+use super::registers::Flag;
 use super::registers::Registers;
 
 pub struct Z80CPU {
@@ -119,6 +120,19 @@ impl Z80CPU {
                 self.r.a = self.r.a.rotate_right(1);
                 1
             }
+            0x10 => {
+                unimplemented!();
+                1
+            }
+            0x11 => {
+                let v = self.fetch_word();
+                self.r.set_de(v);
+                3
+            }
+            0x12 => {
+                unimplemented!();
+                2
+            }
             0x13 => {
                 self.r.set_de(self.r.get_de().wrapping_add(1));
                 1
@@ -130,6 +144,26 @@ impl Z80CPU {
             0x15 => {
                 self.r.d = self.dec(self.r.d);
                 1
+            }
+            0x16 => {
+                self.r.d = self.fetch_byte();
+                2
+            }
+            0x17 => {
+                unimplemented!();
+                1
+            }
+            0x18 => {
+                unimplemented!();
+                3
+            }
+            0x19 => {
+                unimplemented!();
+                2
+            }
+            0x1A => {
+                self.r.a = self.m.read_byte(self.r.get_de());
+                2
             }
             0x1B => {
                 self.r.set_de(self.r.get_de().wrapping_rem(1));
@@ -143,6 +177,26 @@ impl Z80CPU {
                 self.r.e = self.dec(self.r.e);
                 1
             }
+            0x1E => {
+                self.r.e = self.fetch_byte();
+                2
+            }
+            0x1F => {
+                unimplemented!();
+                1
+            }
+            0x20 => {
+                unimplemented!()
+            }
+            0x21 => {
+                let v = self.fetch_word();
+                self.r.set_hl(v);
+                3
+            }
+            0x22 => {
+                self.m.write_byte(self.r.get_hl(), self.r.a); // TODO: correct?
+                2
+            }
             0x23 => {
                 self.r.set_hl(self.r.get_hl().wrapping_add(1));
                 1
@@ -155,6 +209,25 @@ impl Z80CPU {
                 self.r.h = self.dec(self.r.h);
                 1
             }
+            0x26 => {
+                self.r.h = self.fetch_byte();
+                2
+            }
+            0x27 => {
+                unimplemented!();
+                1
+            }
+            0x28 => {
+                unimplemented!()
+            }
+            0x29 => {
+                unimplemented!();
+                2
+            }
+            0x2A => {
+                self.r.a = self.m.read_byte(self.r.get_hl()); // TODO: correct?
+                2
+            }
             0x2B => {
                 self.r.set_hl(self.r.get_hl().wrapping_rem(1));
                 1
@@ -166,6 +239,25 @@ impl Z80CPU {
             0x2D => {
                 self.r.l = self.dec(self.r.l);
                 1
+            }
+            0x2E => {
+                self.r.l = self.fetch_byte();
+                2
+            }
+            0x2F => {
+                unimplemented!();
+                1
+            }
+            0x30 => {
+                unimplemented!()
+            }
+            0x31 => {
+                self.r.sp = self.fetch_word();
+                3
+            }
+            0x32 => {
+                self.m.write_byte(self.r.get_hl(), self.r.a); // TODO: correct?
+                2
             }
             0x33 => {
                 self.r.sp = self.r.sp.wrapping_add(1);
@@ -183,6 +275,27 @@ impl Z80CPU {
                 self.m.write_byte(addr, res);
                 1
             }
+            0x36 => {
+                let v = self.fetch_byte();
+                self.m.write_byte(self.r.get_hl(), v);
+                3
+            }
+            0x37 => {
+                self.r.set_flag(Flag::C, true);
+                self.r.set_flag(Flag::H, false);
+                self.r.set_flag(Flag::N, false);
+                1
+            }
+            0x38 => {
+                unimplemented!()
+            }
+            0x39 => {
+                unimplemented!()
+            }
+            0x3A => {
+                self.r.a = self.m.read_byte(self.r.get_hl()); // TODO: correct?
+                2
+            }
             0x3B => {
                 self.r.sp = self.r.sp.wrapping_rem(1);
                 1
@@ -193,6 +306,14 @@ impl Z80CPU {
             }
             0x3D => {
                 self.r.a = self.dec(self.r.a);
+                1
+            }
+            0x3E => {
+                self.r.a = self.fetch_byte();
+                2
+            }
+            0x3F => {
+                unimplemented!();
                 1
             }
             0x40 => 1,
@@ -266,6 +387,10 @@ impl Z80CPU {
                 self.r.d = self.r.l;
                 1
             }
+            0x56 => {
+                self.r.d = self.m.read_byte(self.r.get_hl());
+                2
+            }
             0x57 => {
                 self.r.d = self.r.a;
                 1
@@ -290,6 +415,10 @@ impl Z80CPU {
             0x5D => {
                 self.r.e = self.r.l;
                 1
+            }
+            0x5E => {
+                self.r.e = self.m.read_byte(self.r.get_hl());
+                2
             }
             0x5F => {
                 self.r.e = self.r.a;
@@ -316,6 +445,10 @@ impl Z80CPU {
                 self.r.h = self.r.l;
                 1
             }
+            0x66 => {
+                self.r.h = self.m.read_byte(self.r.get_hl());
+                2
+            }
             0x67 => {
                 self.r.h = self.r.a;
                 1
@@ -341,13 +474,45 @@ impl Z80CPU {
                 1
             }
             0x6D => 1,
+            0x6E => {
+                self.r.l = self.m.read_byte(self.r.get_hl());
+                2
+            }
             0x6F => {
                 self.r.l = self.r.a;
                 1
             }
+            0x70 => {
+                self.m.write_byte(self.r.get_hl(), self.r.b);
+                2
+            }
+            0x71 => {
+                self.m.write_byte(self.r.get_hl(), self.r.c);
+                2
+            }
+            0x72 => {
+                self.m.write_byte(self.r.get_hl(), self.r.d);
+                2
+            }
+            0x73 => {
+                self.m.write_byte(self.r.get_hl(), self.r.e);
+                2
+            }
+            0x74 => {
+                self.m.write_byte(self.r.get_hl(), self.r.h);
+                2
+            }
+            0x75 => {
+                self.m.write_byte(self.r.get_hl(), self.r.l);
+                2
+            }
             0x76 => {
                 self.halted = true;
                 1
+            }
+            0x77 => {
+                self.m.write_byte(self.r.get_hl(), self.r.a);
+                2
             }
             0x78 => {
                 self.r.a = self.r.b;
@@ -373,6 +538,11 @@ impl Z80CPU {
                 self.r.a = self.r.l;
                 1
             }
+            0x7E => {
+                self.r.a = self.m.read_byte(self.r.get_hl());
+                2
+            }
+            0x7F => 1,
             0x80 => {
                 self.add(self.r.b);
                 1
