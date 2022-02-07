@@ -150,7 +150,8 @@ impl Z80CPU {
                 2
             }
             0x17 => {
-                unimplemented!();
+                self.r.a = self.r.rl_op(self.r.a);
+                self.r.set_flag(Flag::Z, false);
                 1
             }
             0x18 => {

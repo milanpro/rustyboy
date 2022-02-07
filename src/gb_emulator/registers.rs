@@ -89,4 +89,20 @@ impl Registers {
     let mask = flag as u8;
     self.f & mask != 0
   }
+
+  fn set_flags(&mut self, flags: u8) {
+    self.f = flags
+  }
+
+  fn reset_flag(&mut self) {
+    self.f = 0;
+  }
+
+  pub fn rl_op(&mut self, byte: u8) -> u8 {
+    let carry: u8 = if byte>>7 == 1 {Flag::C as u8} else {0};
+    let value = byte<<1 | (self.get_flag(Flag::C) as u8);
+    let zero: u8 = if value == 0 {Flag::Z as u8} else {0};
+    self.set_flags(carry | zero);
+    value
+  }
 }
