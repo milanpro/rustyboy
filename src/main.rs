@@ -1,8 +1,8 @@
 mod gb_emulator;
-use log::error;
-use interpolation::Lerp;
-use pixels::{Pixels, SurfaceTexture};
 use core::panic;
+use interpolation::Lerp;
+use log::error;
+use pixels::{Pixels, SurfaceTexture};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, VirtualKeyCode},
@@ -20,10 +20,10 @@ fn main() {
         .build(&event_loop)
         .unwrap();
 
-        let size = window.inner_size();
-        let width = size.width;
-        let height = size.height;
-        let surface_texture = SurfaceTexture::new(width, height, &window);
+    let size = window.inner_size();
+    let width = size.width;
+    let height = size.height;
+    let surface_texture = SurfaceTexture::new(width, height, &window);
     let mut pixels = match Pixels::new(width, height, surface_texture) {
         Ok(pixels) => pixels,
         Err(error) => {
@@ -36,8 +36,7 @@ fn main() {
         if let Event::RedrawRequested(_) = event {
             let frame = pixels.get_frame();
             for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
-                pixel[0] =
-                    0x0.lerp(&0xff, &(((i as u32 % width) as f32 / width as f32)));
+                pixel[0] = 0x0.lerp(&0xff, &((i as u32 % width) as f32 / width as f32));
                 pixel[1] = 0;
                 pixel[2] = 0;
                 pixel[3] = 0xff;
