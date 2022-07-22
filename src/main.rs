@@ -1,4 +1,4 @@
-mod gb_emulator;
+use rustyboy::start_emulation;
 use core::panic;
 use interpolation::Lerp;
 use log::error;
@@ -32,6 +32,8 @@ fn main() {
         }
     };
 
+    start_emulation();
+
     event_loop.run(move |event, _, control_flow| {
         if let Event::RedrawRequested(_) = event {
             let frame = pixels.get_frame();
@@ -61,11 +63,8 @@ fn main() {
             // Resize the window
             if let Some(size) = input.window_resized() {
                 pixels.resize_surface(size.width, size.height);
+                window.request_redraw();
             }
-
-            window.request_redraw();
         }
     });
-
-    gb_emulator::start_emulation();
 }

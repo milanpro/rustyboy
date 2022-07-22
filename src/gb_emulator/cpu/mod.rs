@@ -25,6 +25,13 @@ impl Z80CPU {
         }
     }
 
+    pub fn run(&mut self) {
+        loop {
+            let ticks = self.cycle();
+            dbg!(ticks);
+        }
+    }
+
     fn cycle(&mut self) -> u32 {
         if self.halted {
             1
@@ -64,7 +71,7 @@ impl Z80CPU {
             }
             0x02 => {
                 self.m.write_byte(self.r.get_bc(), self.r.a);
-                2
+                1
             }
             0x03 => {
                 self.r.set_bc(self.r.get_bc().wrapping_add(1));
@@ -83,7 +90,7 @@ impl Z80CPU {
                 2
             }
             0x07 => {
-                self.r.a = self.r.a.rotate_left(1);
+                self.r.a = self.rlc(self.r.a);
                 1
             }
             0x08 => {
@@ -92,7 +99,8 @@ impl Z80CPU {
                 3
             }
             0x09 => {
-                self.r.set_hl(self.r.get_hl() + self.r.get_bc());
+                let result = self.add_16(self.r.get_hl(), self.r.get_bc());
+                self.r.set_hl(result);
                 1
             }
             0x0A => {
@@ -117,21 +125,18 @@ impl Z80CPU {
                 2
             }
             0x0F => {
-                self.r.a = self.r.a.rotate_right(1);
+                self.r.a = self.rrc(self.r.a);
                 1
             }
-            0x10 => {
-                unimplemented!();
-                1
-            }
+            0x10 => 2, //STOP
             0x11 => {
                 let v = self.fetch_word();
                 self.r.set_de(v);
                 3
             }
             0x12 => {
-                unimplemented!();
-                2
+                self.m.write_byte(self.r.get_de(), self.r.a);
+                1
             }
             0x13 => {
                 self.r.set_de(self.r.get_de().wrapping_add(1));
@@ -150,16 +155,17 @@ impl Z80CPU {
                 2
             }
             0x17 => {
-                unimplemented!();
+                self.r.a = self.rl(self.r.a);
                 1
             }
             0x18 => {
-                unimplemented!();
-                3
+                self.jr();
+                2
             }
             0x19 => {
-                unimplemented!();
-                2
+                let result = self.add_16(self.r.get_hl(), self.r.get_de());
+                self.r.set_hl(result);
+                1
             }
             0x1A => {
                 self.r.a = self.m.read_byte(self.r.get_de());
@@ -182,11 +188,17 @@ impl Z80CPU {
                 2
             }
             0x1F => {
-                unimplemented!();
+                self.r.a = self.rr(self.r.a);
                 1
             }
             0x20 => {
-                unimplemented!()
+                if !self.r.get_flag(Flag::Z) {
+                    self.jr();
+                    3
+                } else {
+                    self.r.pc +=1;
+                    2
+                }
             }
             0x21 => {
                 let v = self.fetch_word();
@@ -214,14 +226,21 @@ impl Z80CPU {
                 2
             }
             0x27 => {
-                unimplemented!();
+                self.daa();
                 1
             }
             0x28 => {
-                unimplemented!()
+                if self.r.get_flag(Flag::Z) {
+                    self.jr();
+                    3
+                } else {
+                    self.r.pc +=1;
+                    2
+                }
             }
             0x29 => {
-                unimplemented!();
+                let result = self.add_16(self.r.get_hl(), self.r.get_hl());
+                self.r.set_hl(result);
                 2
             }
             0x2A => {
@@ -249,7 +268,13 @@ impl Z80CPU {
                 1
             }
             0x30 => {
-                unimplemented!()
+                if !self.r.get_flag(Flag::C) {
+                    self.jr();
+                    3
+                } else {
+                    self.r.pc +=1;
+                    2
+                }
             }
             0x31 => {
                 self.r.sp = self.fetch_word();
@@ -287,7 +312,13 @@ impl Z80CPU {
                 1
             }
             0x38 => {
-                unimplemented!()
+                if self.r.get_flag(Flag::C) {
+                    self.jr();
+                    3
+                } else {
+                    self.r.pc +=1;
+                    2
+                }
             }
             0x39 => {
                 unimplemented!()
