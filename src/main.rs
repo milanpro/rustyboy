@@ -1,8 +1,8 @@
-use rustyboy::start_emulation;
 use core::panic;
 use interpolation::Lerp;
 use log::error;
 use pixels::{Pixels, SurfaceTexture};
+use rustyboy::start_emulation;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, VirtualKeyCode},
@@ -36,12 +36,11 @@ fn main() {
 
     event_loop.run(move |event, _, control_flow| {
         if let Event::RedrawRequested(_) = event {
-            let frame = pixels.get_frame();
+            let win_width = window.inner_size().width;
+            let frame = pixels.frame_mut();
             for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
-                pixel[0] = 0x0.lerp(&0xff, &((i as u32 % width) as f32 / width as f32));
-                pixel[1] = 0;
-                pixel[2] = 0;
-                pixel[3] = 0xff;
+                let r: u8 = 0x0.lerp(&0xff, &((i as u32 % win_width) as f32 / win_width as f32));
+                pixel.copy_from_slice(&[r, 0, 0, 0xff]);
             }
             if pixels
                 .render()
@@ -55,14 +54,24 @@ fn main() {
         // Handle input events
         if input.update(&event) {
             // Close events
-            if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
+            if input.key_pressed(VirtualKeyCode::Escape)
+                || input.close_requested()
+                || input.destroyed()
+            {
                 *control_flow = ControlFlow::Exit;
                 return;
             }
 
             // Resize the window
             if let Some(size) = input.window_resized() {
-                pixels.resize_surface(size.width, size.height);
+                if let Err(err) = pixels
+                    .resize_surface(size.width, size.height)
+                    .and_then(|_| pixels.resize_buffer(size.width, size.height))
+                {
+                    error!("pixels.resize_surface {:?}", err);
+                    *control_flow = ControlFlow::Exit;
+                    return;
+                }
                 window.request_redraw();
             }
         }
