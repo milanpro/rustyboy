@@ -60,6 +60,17 @@ impl Z80CPU {
         w
     }
 
+    fn push_stack(&mut self, val: u16) {
+        self.r.sp = self.r.sp.wrapping_sub(2);
+        self.m.write_word(self.r.sp, val);
+    }
+
+    fn pop_stack(&mut self) -> u16 {
+        let val = self.m.read_word(self.r.sp);
+        self.r.sp.wrapping_add(2);
+        val
+    }
+
     // fetch and run the next instruction, returns the length of the ran instruction
     fn interpret(&mut self) -> u32 {
         match self.fetch_byte() {
@@ -71,11 +82,11 @@ impl Z80CPU {
             }
             0x02 => {
                 self.m.write_byte(self.r.get_bc(), self.r.a);
-                1
+                2
             }
             0x03 => {
                 self.r.set_bc(self.r.get_bc().wrapping_add(1));
-                1
+                2
             }
             0x04 => {
                 self.r.b = self.inc(self.r.b);
@@ -96,21 +107,21 @@ impl Z80CPU {
             0x08 => {
                 let addr = self.fetch_word();
                 self.m.write_word(addr, self.r.sp);
-                3
+                5
             }
             0x09 => {
                 let result = self.add_16(self.r.get_hl(), self.r.get_bc());
                 self.r.set_hl(result);
-                1
+                2
             }
             0x0A => {
                 let addr = self.r.get_bc();
                 self.r.a = self.m.read_byte(addr);
-                1
+                2
             }
             0x0B => {
                 self.r.set_bc(self.r.get_bc().wrapping_rem(1));
-                1
+                2
             }
             0x0C => {
                 self.r.c = self.inc(self.r.c);
@@ -128,7 +139,7 @@ impl Z80CPU {
                 self.r.a = self.rrc(self.r.a);
                 1
             }
-            0x10 => 2, //STOP
+            0x10 => 1, //STOP
             0x11 => {
                 let v = self.fetch_word();
                 self.r.set_de(v);
@@ -136,11 +147,11 @@ impl Z80CPU {
             }
             0x12 => {
                 self.m.write_byte(self.r.get_de(), self.r.a);
-                1
+                2
             }
             0x13 => {
                 self.r.set_de(self.r.get_de().wrapping_add(1));
-                1
+                2
             }
             0x14 => {
                 self.r.d = self.inc(self.r.d);
@@ -160,12 +171,12 @@ impl Z80CPU {
             }
             0x18 => {
                 self.jr();
-                2
+                3
             }
             0x19 => {
                 let result = self.add_16(self.r.get_hl(), self.r.get_de());
                 self.r.set_hl(result);
-                1
+                2
             }
             0x1A => {
                 self.r.a = self.m.read_byte(self.r.get_de());
@@ -173,7 +184,7 @@ impl Z80CPU {
             }
             0x1B => {
                 self.r.set_de(self.r.get_de().wrapping_rem(1));
-                1
+                2
             }
             0x1C => {
                 self.r.e = self.inc(self.r.e);
@@ -196,7 +207,7 @@ impl Z80CPU {
                     self.jr();
                     3
                 } else {
-                    self.r.pc +=1;
+                    self.r.pc += 1;
                     2
                 }
             }
@@ -211,7 +222,7 @@ impl Z80CPU {
             }
             0x23 => {
                 self.r.set_hl(self.r.get_hl().wrapping_add(1));
-                1
+                2
             }
             0x24 => {
                 self.r.h = self.inc(self.r.h);
@@ -234,7 +245,7 @@ impl Z80CPU {
                     self.jr();
                     3
                 } else {
-                    self.r.pc +=1;
+                    self.r.pc += 1;
                     2
                 }
             }
@@ -249,7 +260,7 @@ impl Z80CPU {
             }
             0x2B => {
                 self.r.set_hl(self.r.get_hl().wrapping_rem(1));
-                1
+                2
             }
             0x2C => {
                 self.r.l = self.inc(self.r.l);
@@ -264,7 +275,9 @@ impl Z80CPU {
                 2
             }
             0x2F => {
-                unimplemented!();
+                self.r.a = !self.r.a;
+                self.r.set_flag(Flag::H, true);
+                self.r.set_flag(Flag::N, true);
                 1
             }
             0x30 => {
@@ -272,7 +285,7 @@ impl Z80CPU {
                     self.jr();
                     3
                 } else {
-                    self.r.pc +=1;
+                    self.r.pc += 1;
                     2
                 }
             }
@@ -286,19 +299,19 @@ impl Z80CPU {
             }
             0x33 => {
                 self.r.sp = self.r.sp.wrapping_add(1);
-                1
+                2
             }
             0x34 => {
                 let addr = self.r.get_hl();
                 let res = self.inc(self.m.read_byte(addr));
                 self.m.write_byte(addr, res);
-                1
+                3
             }
             0x35 => {
                 let addr = self.r.get_hl();
                 let res = self.dec(self.m.read_byte(addr));
                 self.m.write_byte(addr, res);
-                1
+                3
             }
             0x36 => {
                 let v = self.fetch_byte();
@@ -316,12 +329,14 @@ impl Z80CPU {
                     self.jr();
                     3
                 } else {
-                    self.r.pc +=1;
+                    self.r.pc += 1;
                     2
                 }
             }
             0x39 => {
-                unimplemented!()
+                let result = self.add_16(self.r.get_hl(), self.r.sp);
+                self.r.set_hl(result);
+                2
             }
             0x3A => {
                 self.r.a = self.m.read_byte(self.r.get_hl()); // TODO: correct?
@@ -329,7 +344,7 @@ impl Z80CPU {
             }
             0x3B => {
                 self.r.sp = self.r.sp.wrapping_rem(1);
-                1
+                2
             }
             0x3C => {
                 self.r.a = self.inc(self.r.a);
@@ -344,7 +359,9 @@ impl Z80CPU {
                 2
             }
             0x3F => {
-                unimplemented!();
+                self.r.set_flag(Flag::C, !self.r.get_flag(Flag::C));
+                self.r.set_flag(Flag::H, false);
+                self.r.set_flag(Flag::N, false);
                 1
             }
             0x40 => 1,
@@ -367,6 +384,10 @@ impl Z80CPU {
             0x45 => {
                 self.r.b = self.r.l;
                 1
+            }
+            0x46 => {
+                self.r.b = self.m.read_byte(self.r.get_hl());
+                2
             }
             0x47 => {
                 self.r.b = self.r.a;
@@ -392,6 +413,10 @@ impl Z80CPU {
             0x4D => {
                 self.r.c = self.r.l;
                 1
+            }
+            0x4E => {
+                self.r.c = self.m.read_byte(self.r.get_hl());
+                2
             }
             0x4F => {
                 self.r.c = self.r.a;
@@ -601,7 +626,7 @@ impl Z80CPU {
             0x86 => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.add(val);
-                1
+                2
             }
             0x87 => {
                 self.add(self.r.a);
@@ -634,7 +659,7 @@ impl Z80CPU {
             0x8E => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.adc(val);
-                1
+                2
             }
             0x8F => {
                 self.adc(self.r.a);
@@ -667,7 +692,7 @@ impl Z80CPU {
             0x96 => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.sub(val);
-                1
+                2
             }
             0x97 => {
                 self.sub(self.r.a);
@@ -700,7 +725,7 @@ impl Z80CPU {
             0x9E => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.sbc(val);
-                1
+                2
             }
             0x9F => {
                 self.sbc(self.r.a);
@@ -733,7 +758,7 @@ impl Z80CPU {
             0xA6 => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.and(val);
-                1
+                2
             }
             0xA7 => {
                 self.and(self.r.a);
@@ -766,7 +791,7 @@ impl Z80CPU {
             0xAE => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.xor(val);
-                1
+                2
             }
             0xAF => {
                 self.xor(self.r.a);
@@ -799,7 +824,7 @@ impl Z80CPU {
             0xB6 => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.or(val);
-                1
+                2
             }
             0xB7 => {
                 self.or(self.r.a);
@@ -832,12 +857,320 @@ impl Z80CPU {
             0xBE => {
                 let val = self.m.read_byte(self.r.get_hl());
                 self.cp(val);
-                1
+                2
             }
             0xBF => {
                 self.cp(self.r.a);
                 1
             }
+            0xC0 => {
+                if !self.r.get_flag(Flag::Z) {
+                    self.r.pc = self.pop_stack();
+                    5
+                } else {
+                    2
+                }
+            }
+            0xC1 => {
+                let val = self.pop_stack();
+                self.r.set_bc(val);
+                3
+            }
+            0xC2 => {
+                if !self.r.get_flag(Flag::Z) {
+                    self.r.pc = self.fetch_word();
+                    4
+                } else {
+                    self.r.pc += 2;
+                    3
+                }
+            }
+            0xC3 => {
+                self.r.pc = self.fetch_word();
+                4
+            }
+            0xC4 => {
+                if !self.r.get_flag(Flag::Z) {
+                    self.push_stack(self.r.pc + 2);
+                    6
+                } else {
+                    self.r.pc = self.fetch_word();
+                    3
+                }
+            }
+            0xC5 => {
+                self.push_stack(self.r.get_bc());
+                4
+            }
+            0xC6 => {
+                let val = self.fetch_byte();
+                self.add(val);
+                2
+            }
+            0xC7 => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x00;
+                4
+            }
+            0xC8 => {
+                if self.r.get_flag(Flag::Z) {
+                    self.r.pc = self.pop_stack();
+                    5
+                } else {
+                    2
+                }
+            }
+            0xC9 => {
+                self.r.pc = self.pop_stack();
+                4
+            }
+            0xCA => {
+                if self.r.get_flag(Flag::Z) {
+                    self.r.pc = self.fetch_word();
+                    4
+                } else {
+                    self.r.pc += 2;
+                    3
+                }
+            }
+            0xCB => self.interpret_cb(),
+            0xCC => {
+                if self.r.get_flag(Flag::Z) {
+                    self.push_stack(self.r.pc + 2);
+                    self.r.pc = self.fetch_word();
+                    6
+                } else {
+                    self.r.pc += 2;
+                    3
+                }
+            }
+            0xCD => {
+                self.push_stack(self.r.pc + 2);
+                self.r.pc = self.fetch_word();
+                6
+            }
+            0xCE => {
+                let val = self.fetch_byte();
+                self.adc(val);
+                2
+            }
+            0xCF => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x08;
+                4
+            }
+            0xD0 => {
+                if !self.r.get_flag(Flag::C) {
+                    self.r.pc = self.pop_stack();
+                    5
+                } else {
+                    2
+                }
+            }
+            0xD1 => {
+                let val = self.pop_stack();
+                self.r.set_de(val);
+                3
+            }
+            0xD2 => {
+                if !self.r.get_flag(Flag::C) {
+                    self.r.pc = self.fetch_word();
+                    4
+                } else {
+                    self.r.pc += 2;
+                    3
+                }
+            }
+            0xD4 => {
+                if !self.r.get_flag(Flag::C) {
+                    self.push_stack(self.r.pc + 2);
+                    self.r.pc = self.fetch_word();
+                    6
+                } else {
+                    self.r.pc += 2;
+                    3
+                }
+            }
+            0xD5 => {
+                self.push_stack(self.r.get_de());
+                4
+            }
+            0xD6 => {
+                let val = self.fetch_byte();
+                self.sub(val);
+                2
+            }
+            0xD7 => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x10;
+                4
+            }
+            0xD8 => {
+                if self.r.get_flag(Flag::C) {
+                    self.r.pc = self.pop_stack();
+                    5
+                } else {
+                    2
+                }
+            }
+            0xD9 => {
+                self.r.pc = self.pop_stack();
+                // TODO: Enable Interrupts
+                4
+            }
+            0xDA => {
+                if self.r.get_flag(Flag::C) {
+                    self.r.pc = self.fetch_word();
+                    4
+                } else {
+                    self.r.pc += 2;
+                    3
+                }
+            }
+            0xDC => {
+                if self.r.get_flag(Flag::C) {
+                    self.push_stack(self.r.pc + 2);
+                    self.r.pc = self.fetch_word();
+                    6
+                } else {
+                    self.r.pc += 2;
+                    3
+                }
+            }
+            0xDE => {
+                let val = self.fetch_byte();
+                self.sbc(val);
+                2
+            }
+            0xDF => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x18;
+                4
+            }
+            0xE0 => {
+                let addr = 0xFF00 + self.fetch_byte() as u16;
+                self.m.write_byte(addr, self.r.a);
+                3
+            }
+            0xE1 => {
+                let val = self.pop_stack();
+                self.r.set_hl(val);
+                3
+            }
+            0xE2 => {
+                let addr = 0xFF00 + self.r.c as u16;
+                self.m.write_byte(addr, self.r.a);
+                2
+            }
+            0xE5 => {
+                self.push_stack(self.r.get_hl());
+                4
+            }
+            0xE6 => {
+                let val = self.fetch_byte();
+                self.and(val);
+                2
+            }
+            0xE7 => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x20;
+                4
+            }
+            0xE8 => {
+                self.r.sp = self.add_16_imm(self.r.sp);
+                4
+            }
+            0xE9 => {
+                self.r.pc = self.r.get_hl();
+                1
+            }
+            0xEA => {
+                let addr = self.fetch_word();
+                self.m.write_byte(addr, self.r.a);
+                4
+            }
+            0xEE => {
+                let val = self.fetch_byte();
+                self.xor(val);
+                2
+            }
+            0xEF => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x28;
+                4
+            }
+            0xF0 => {
+                let addr = 0xFF00 | self.fetch_byte() as u16;
+                self.r.a = self.m.read_byte(addr);
+                3
+            }
+            0xF1 => {
+                let val = self.pop_stack() & 0xFFF0;
+                self.r.set_af(val);
+                3
+            }
+            0xF2 => {
+                let addr = 0xFF00 | self.r.c as u16;
+                self.r.a = self.m.read_byte(addr);
+                2
+            }
+            0xF3 => {
+                // TODO: Disable Interrupts
+                1
+            }
+            0xF5 => {
+                self.push_stack(self.r.get_af());
+                4
+            }
+            0xF6 => {
+                let val = self.fetch_byte();
+                self.or(val);
+                2
+            }
+            0xF7 => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x30;
+                4
+            }
+            0xF8 => {
+                let val = self.add_16_imm(self.r.sp);
+                self.r.set_hl(val);
+                3
+            }
+            0xF9 => {
+                self.r.sp = self.r.get_hl();
+                2
+            }
+            0xFA => {
+                let addr = self.fetch_word();
+                self.r.a = self.m.read_byte(addr);
+                4
+            }
+            0xFB => {
+                //TODO: Enable interrupts
+                1
+            }
+            0xFE => {
+                let val = self.fetch_byte();
+                self.cp(val);
+                2
+            }
+            0xFF => {
+                self.push_stack(self.r.pc);
+                self.r.pc = 0x38;
+                4
+            }
+            notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
+        }
+    }
+
+    fn interpret_cb(&mut self) -> u32 {
+        match self.fetch_byte() {
+            0x00 => {
+                self.r.b = self.rlc(self.r.b);
+                2
+            }
+            // TODO: Other instructions
             notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
         }
     }

@@ -5,6 +5,7 @@ use crate::gb_emulator::utils::U16Ext;
 pub trait Opcodes {
     fn add(&mut self, val: u8);
     fn add_16(&mut self, lhs: u16, rhs: u16) -> u16;
+    fn add_16_imm(&mut self, val: u16) -> u16;
     fn adc(&mut self, val: u8);
 
     fn sub(&mut self, val: u8);
@@ -137,7 +138,7 @@ impl Opcodes for Z80CPU {
 
     fn rl(&mut self, val: u8) -> u8 {
         let carry = self.r.get_flag(Flag::C) as u8;
-        self.r.set_flag(Flag::C, (val & (1<<7)) > 0x0);
+        self.r.set_flag(Flag::C, (val & (1 << 7)) > 0x0);
         let mut res = val << 1;
         res += carry;
         self.r.set_flag(Flag::H, false);
@@ -178,18 +179,36 @@ impl Opcodes for Z80CPU {
     fn add_16(&mut self, lhs: u16, rhs: u16) -> u16 {
         let (result, carry) = lhs.overflowing_add(rhs);
         self.r.set_flag(Flag::C, carry);
-        self.r.set_flag(Flag::H, ((lhs & 0x0fff) + (rhs & 0x0fff)) > 0x0fff);
+        self.r
+            .set_flag(Flag::H, ((lhs & 0x0fff) + (rhs & 0x0fff)) > 0x0fff);
         self.r.set_flag(Flag::N, false);
         result
+    }
+
+    fn add_16_imm(&mut self, lhs: u16) -> u16 {
+        let rhs: u16 = self.fetch_byte() as i8 as i16 as u16;
+        self.r.set_flag(Flag::N, false);
+        self.r.set_flag(Flag::Z, false);
+        self.r
+            .set_flag(Flag::H, (lhs & 0x000F) + (rhs & 0x000F) > 0x000F);
+        self.r
+            .set_flag(Flag::C, (lhs & 0x00FF) + (rhs & 0x00FF) > 0x00FF);
+        return lhs.wrapping_add(rhs);
     }
 
     fn daa(&mut self) {
         let mut a = self.r.a;
         let mut adjust = if self.r.get_flag(Flag::C) { 0x60 } else { 0x00 };
-        if self.r.get_flag(Flag::H) { adjust |= 0x06; };
+        if self.r.get_flag(Flag::H) {
+            adjust |= 0x06;
+        };
         if !self.r.get_flag(Flag::N) {
-            if a & 0x0F > 0x09 { adjust |= 0x06; };
-            if a > 0x99 { adjust |= 0x60; };
+            if a & 0x0F > 0x09 {
+                adjust |= 0x06;
+            };
+            if a > 0x99 {
+                adjust |= 0x60;
+            };
             a = a.wrapping_add(adjust);
         } else {
             a = a.wrapping_sub(adjust);
