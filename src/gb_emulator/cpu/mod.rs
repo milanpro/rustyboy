@@ -67,7 +67,7 @@ impl Z80CPU {
 
     fn pop_stack(&mut self) -> u16 {
         let val = self.m.read_word(self.r.sp);
-        self.r.sp.wrapping_add(2);
+        self.r.sp = self.r.sp.wrapping_add(2);
         val
     }
 
@@ -1173,5 +1173,413 @@ impl Z80CPU {
             // TODO: Other instructions
             notimpl => unimplemented!("Instruction {:2X} is not implemented", notimpl),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let cpu = Z80CPU::new();
+        assert_eq!(cpu.halted, false);
+        assert_eq!(cpu.ime, false);
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut cpu = Z80CPU::new();
+        cpu.halted = true;
+        cpu.ime = true;
+        cpu.reset();
+        assert_eq!(cpu.halted, false);
+        assert_eq!(cpu.ime, false);
+    }
+
+    #[test]
+    fn test_add() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.add(0x01);
+        assert_eq!(cpu.r.a, 0x02);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.add(0x00);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x0F;
+        cpu.add(0x01);
+        assert_eq!(cpu.r.a, 0x10);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0xFF;
+        cpu.add(0x01);
+        assert_eq!(cpu.r.a, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_adc() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.r.set_flag(Flag::C, false);
+        cpu.adc(0x01);
+        assert_eq!(cpu.r.a, 0x02);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.r.set_flag(Flag::C, true);
+        cpu.adc(0x00);
+        assert_eq!(cpu.r.a, 0x02);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x0F;
+        cpu.r.set_flag(Flag::C, false);
+        cpu.adc(0x01);
+        assert_eq!(cpu.r.a, 0x10);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0xFF;
+        cpu.r.set_flag(Flag::C, false);
+        cpu.adc(0x01);
+        assert_eq!(cpu.r.a, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_sub() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.sub(0x01);
+        assert_eq!(cpu.r.a, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.sub(0x00);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x10;
+        cpu.sub(0x01);
+        assert_eq!(cpu.r.a, 0x0F);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x00;
+        cpu.sub(0x01);
+        assert_eq!(cpu.r.a, 0xFF);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_sbc() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.r.set_flag(Flag::C, false);
+        cpu.sbc(0x01);
+        assert_eq!(cpu.r.a, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.r.set_flag(Flag::C, true);
+        cpu.sbc(0x00);
+        assert_eq!(cpu.r.a, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x10;
+        cpu.r.set_flag(Flag::C, false);
+        cpu.sbc(0x01);
+        assert_eq!(cpu.r.a, 0x0F);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x00;
+        cpu.r.set_flag(Flag::C, false);
+        cpu.sbc(0x01);
+        assert_eq!(cpu.r.a, 0xFF);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_and() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.and(0x01);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.and(0x00);
+        assert_eq!(cpu.r.a, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x0F;
+        cpu.and(0x01);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0xFF;
+        cpu.and(0x01);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_xor() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.xor(0x01);
+        assert_eq!(cpu.r.a, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.xor(0x00);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x0F;
+        cpu.xor(0x01);
+        assert_eq!(cpu.r.a, 0x0E);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0xFF;
+        cpu.xor(0x01);
+        assert_eq!(cpu.r.a, 0xFE);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_or() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.or(0x01);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.or(0x00);
+        assert_eq!(cpu.r.a, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x0F;
+        cpu.or(0x01);
+        assert_eq!(cpu.r.a, 0x0F);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0xFF;
+        cpu.or(0x01);
+        assert_eq!(cpu.r.a, 0xFF);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_cp() {
+        let mut cpu = Z80CPU::new();
+        cpu.r.a = 0x01;
+        cpu.cp(0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x01;
+        cpu.cp(0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x10;
+        cpu.cp(0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        cpu.r.a = 0x00;
+        cpu.cp(0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), true);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_rlc() {
+        let mut cpu = Z80CPU::new();
+        let value = 0x01;
+        let result = cpu.rlc(value);
+        assert_eq!(result, 0x02);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        let value = 0x80;
+        let result = cpu.rlc(value);
+        assert_eq!(result, 0x01);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_rl() {
+        let mut cpu = Z80CPU::new();
+        let value = 0x01;
+        cpu.r.set_flag(Flag::C, false);
+        let result = cpu.rl(value);
+        assert_eq!(result, 0x02);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+
+        let value = 0x01;
+        cpu.r.set_flag(Flag::C, true);
+        let result = cpu.rl(value);
+        assert_eq!(result, 0x03);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_rrc() {
+        let mut cpu = Z80CPU::new();
+        let value = 0x01;
+        let result = cpu.rrc(value);
+        assert_eq!(result, 0x80);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_rr() {
+        let mut cpu = Z80CPU::new();
+        let value = 0x01;
+        cpu.r.set_flag(Flag::C, false);
+        let result = cpu.rr(value);
+        assert_eq!(result, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+
+        let value = 0x01;
+        cpu.r.set_flag(Flag::C, true);
+        let result = cpu.rr(value);
+        assert_eq!(result, 0x80);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+        assert_eq!(cpu.r.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_inc() {
+        let mut cpu = Z80CPU::new();
+        let value = 0x01;
+        let result = cpu.inc(value);
+        assert_eq!(result, 0x02);
+        assert_eq!(cpu.r.get_flag(Flag::Z), false);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), false);
+
+        let value = 0xFF;
+        let result = cpu.inc(value);
+        assert_eq!(result, 0x00);
+        assert_eq!(cpu.r.get_flag(Flag::Z), true);
+        assert_eq!(cpu.r.get_flag(Flag::N), false);
+        assert_eq!(cpu.r.get_flag(Flag::H), true);
     }
 }

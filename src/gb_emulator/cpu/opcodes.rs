@@ -59,17 +59,26 @@ impl Opcodes for Z80CPU {
     }
 
     fn sub(&mut self, val: u8) {
-        self.cp(val);
-        self.r.a -= val;
+        let res = self.r.a.wrapping_sub(val);
+
+        self.r.set_flag(Flag::H, (self.r.a & 0x0F) < (val & 0x0F));
+        self.r.set_flag(Flag::C, (self.r.a as u16) < (val as u16));
+        self.r.set_flag(Flag::N, true);
+        self.r.set_flag(Flag::Z, res == 0);
+
+        self.r.a = res;
     }
 
     fn sbc(&mut self, val: u8) {
-        let res = self.r.a - val - 1;
+        let oldcarry = if self.r.get_flag(Flag::C) { 1 } else { 0 };
+        let res = self.r.a.wrapping_sub(val).wrapping_sub(oldcarry);
 
         self.r
-            .set_flag(Flag::H, ((self.r.a & 0xF) as i8 - (val & 0xF) as i8) < 0);
-        self.r
-            .set_flag(Flag::C, ((self.r.a as i16) - (val as i16) - 1) < 0);
+            .set_flag(Flag::H, (self.r.a & 0x0F) < (val & 0x0F) + oldcarry);
+        self.r.set_flag(
+            Flag::C,
+            (self.r.a as u16) < (val as u16) + (oldcarry as u16),
+        );
         self.r.set_flag(Flag::N, true);
         self.r.set_flag(Flag::Z, res == 0);
 
@@ -148,7 +157,8 @@ impl Opcodes for Z80CPU {
     }
 
     fn rlc(&mut self, val: u8) -> u8 {
-        let (result, carry) = val.overflowing_shl(1);
+        let carry = val & 0x80 == 0x80;
+        let result = val.rotate_left(1);
         self.r.set_flag(Flag::C, carry);
         self.r.set_flag(Flag::H, false);
         self.r.set_flag(Flag::N, false);
@@ -168,7 +178,8 @@ impl Opcodes for Z80CPU {
     }
 
     fn rrc(&mut self, val: u8) -> u8 {
-        let (result, carry) = val.overflowing_shr(1);
+        let carry = val & 0x01 == 0x01;
+        let result = val.rotate_right(1);
         self.r.set_flag(Flag::C, carry);
         self.r.set_flag(Flag::H, false);
         self.r.set_flag(Flag::N, false);
